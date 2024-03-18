@@ -233,6 +233,14 @@ describe("Provider", () => {
         });
     });
 
+    describe("#getL1BatchDetailsWithOffchainVerification()", () => {
+        it("should return L1 batch details with offchain verification", async () => {
+            const l1BatchNumber = await provider.getL1BatchDetailsWithOffchainVerification();
+            const result = await provider.getL1(l1BatchNumber);
+            expect(result).not.to.be.null;
+        });
+    });
+
     describe("#getLogs(filter)", () => {
         it("should return logs", async () => {
             const result = await provider.getLogs({

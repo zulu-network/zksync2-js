@@ -8,7 +8,7 @@ import {
     SignatureLike,
     TransactionRequest as EthersTransactionRequest,
 } from "ethers";
-import { EIP712_TX_TYPE, parseEip712, serializeEip712, sleep, eip712TxHash } from "./utils";
+import {EIP712_TX_TYPE, parseEip712, serializeEip712, sleep, eip712TxHash} from "./utils";
 
 // 0x-prefixed, hex encoded, ethereum account address
 export type Address = string;
@@ -136,7 +136,7 @@ export class TransactionResponse extends ethers.TransactionResponse {
     }
 
     override toJSON(): any {
-        const { l1BatchNumber, l1BatchTxIndex } = this;
+        const {l1BatchNumber, l1BatchTxIndex} = this;
 
         return {
             ...super.toJSON(),
@@ -177,7 +177,7 @@ export class TransactionReceipt extends ethers.TransactionReceipt {
     }
 
     override toJSON(): any {
-        const { l1BatchNumber, l1BatchTxIndex, l2ToL1Logs } = this;
+        const {l1BatchNumber, l1BatchTxIndex, l2ToL1Logs} = this;
         return {
             ...super.toJSON(),
             l1BatchNumber,
@@ -198,7 +198,7 @@ export class Block extends ethers.Block {
     }
 
     override toJSON(): any {
-        const { l1BatchNumber, l1BatchTimestamp: l1BatchTxIndex } = this;
+        const {l1BatchNumber, l1BatchTimestamp: l1BatchTxIndex} = this;
         return {
             ...super.toJSON(),
             l1BatchNumber,
@@ -228,7 +228,7 @@ export class Log extends ethers.Log {
     }
 
     override toJSON(): any {
-        const { l1BatchNumber } = this;
+        const {l1BatchNumber} = this;
         return {
             ...super.toJSON(),
             l1BatchNumber,
@@ -336,7 +336,7 @@ export class Transaction extends ethers.Transaction {
     }
 
     override toJSON(): any {
-        const { customData } = this;
+        const {customData} = this;
         return {
             ...super.toJSON(),
             type: this.#type == null ? this.type : this.#type,
@@ -370,6 +370,7 @@ export class Transaction extends ethers.Transaction {
     override get from(): string | null {
         return this.#type === EIP712_TX_TYPE ? (this.#from as string) : super.from;
     }
+
     override set from(value: string | null) {
         this.#from = value;
     }
@@ -455,6 +456,29 @@ export interface BatchDetails {
     executedAt?: Date;
     l1GasPrice: number;
     l2FairGasPrice: number;
+}
+
+export interface BatchDetailsWithOffchainVerification {
+    number: number;
+    timestamp: number;
+    l1TxCount: number;
+    l2TxCount: number;
+    rootHash?: string;
+    status: string;
+    commitTxHash?: string;
+    committedAt?: Date;
+    proveTxHash?: string;
+    provenAt?: Date;
+    executeTxHash?: string;
+    executedAt?: Date;
+    l1GasPrice: number;
+    l2FairGasPrice: number;
+
+    // offchain verification fields
+    l1_batch_number: number,
+    verifier_status: string,
+    verifier_picked_at?: Date,
+    verifier_submit_at?: Date,
 }
 
 export interface BlockDetails {

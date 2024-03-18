@@ -17,7 +17,7 @@ import {
     FetchRequest,
     AddressLike,
 } from "ethers";
-import { IERC20__factory, IEthToken__factory, IL2Bridge__factory } from "../typechain";
+import {IERC20__factory, IEthToken__factory, IL2Bridge__factory} from "../typechain";
 import {
     Address,
     TransactionResponse,
@@ -37,7 +37,7 @@ import {
     BatchDetails,
     Fee,
     Transaction,
-    RawBlockTransaction,
+    RawBlockTransaction, BatchDetailsWithOffchainVerification,
 } from "./types";
 import {
     isETH,
@@ -50,9 +50,9 @@ import {
     EIP712_TX_TYPE,
     REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT,
 } from "./utils";
-import { Signer } from "./signer";
+import {Signer} from "./signer";
 
-import { formatLog, formatBlock, formatTransactionResponse, formatTransactionReceipt } from "./format";
+import {formatLog, formatBlock, formatTransactionResponse, formatTransactionReceipt} from "./format";
 
 type Constructor<T = {}> = new (...args: any[]) => T;
 
@@ -135,7 +135,7 @@ export function JsonRpcApiProvider<TBase extends Constructor<ethers.JsonRpcApiPr
             } else {
                 try {
                     let token = IERC20__factory.connect(tokenAddress, this);
-                    return await token.balanceOf(address, { blockTag });
+                    return await token.balanceOf(address, {blockTag});
                 } catch {
                     return 0n;
                 }
@@ -153,7 +153,8 @@ export function JsonRpcApiProvider<TBase extends Constructor<ethers.JsonRpcApiPr
                     if (l2WethToken != ethers.ZeroAddress) {
                         return l2WethToken;
                     }
-                } catch (e) {}
+                } catch (e) {
+                }
 
                 const erc20Bridge = IL2Bridge__factory.connect(bridgeAddresses.erc20L2!, this);
                 return await erc20Bridge.l2TokenAddress(token);
@@ -171,7 +172,8 @@ export function JsonRpcApiProvider<TBase extends Constructor<ethers.JsonRpcApiPr
                     if (l1WethToken != ethers.ZeroAddress) {
                         return l1WethToken;
                     }
-                } catch (e) {}
+                } catch (e) {
+                }
                 const erc20Bridge = IL2Bridge__factory.connect(bridgeAddresses.erc20L2!, this);
                 return await erc20Bridge.l1TokenAddress(token);
             }
@@ -233,7 +235,7 @@ export function JsonRpcApiProvider<TBase extends Constructor<ethers.JsonRpcApiPr
 
         async getConfirmedTokens(start: number = 0, limit: number = 255): Promise<Token[]> {
             const tokens: Token[] = await this.send("zks_getConfirmedTokens", [start, limit]);
-            return tokens.map((token) => ({ address: token.l2Address, ...token }));
+            return tokens.map((token) => ({address: token.l2Address, ...token}));
         }
 
         async getAllAccountBalances(address: Address): Promise<BalancesMap> {
@@ -252,6 +254,10 @@ export function JsonRpcApiProvider<TBase extends Constructor<ethers.JsonRpcApiPr
         async getL1BatchNumber(): Promise<number> {
             const number = await this.send("zks_L1BatchNumber", []);
             return Number(number);
+        }
+
+        async getL1BatchDetailsWithOffchainVerification(number: number): Promise<BatchDetailsWithOffchainVerification> {
+            return await this.send("zks_getL1BatchDetailsWithOffchainVerification", [number]);
         }
 
         async getL1BatchDetails(number: number): Promise<BatchDetails> {
@@ -282,7 +288,7 @@ export function JsonRpcApiProvider<TBase extends Constructor<ethers.JsonRpcApiPr
             bridgeAddress?: Address;
             overrides?: ethers.Overrides;
         }): Promise<EthersTransactionRequest> {
-            const { ...tx } = transaction;
+            const {...tx} = transaction;
 
             if (tx.to == null && tx.from == null) {
                 throw new Error("withdrawal target address is undefined");
@@ -315,7 +321,8 @@ export function JsonRpcApiProvider<TBase extends Constructor<ethers.JsonRpcApiPr
                 let l1WethToken = ethers.ZeroAddress;
                 try {
                     l1WethToken = await l2WethBridge.l1TokenAddress(tx.token);
-                } catch (e) {}
+                } catch (e) {
+                }
                 tx.bridgeAddress =
                     l1WethToken != ethers.ZeroAddress ? bridgeAddresses.wethL2 : bridgeAddresses.erc20L2;
             }
@@ -348,7 +355,7 @@ export function JsonRpcApiProvider<TBase extends Constructor<ethers.JsonRpcApiPr
             token?: Address;
             overrides?: ethers.Overrides;
         }): Promise<EthersTransactionRequest> {
-            const { ...tx } = transaction;
+            const {...tx} = transaction;
             tx.overrides ??= {};
             tx.overrides.from ??= tx.from;
 
@@ -415,7 +422,7 @@ export function JsonRpcApiProvider<TBase extends Constructor<ethers.JsonRpcApiPr
         }
 
         override async broadcastTransaction(signedTx: string): Promise<TransactionResponse> {
-            const { blockNumber, hash, network } = await resolveProperties({
+            const {blockNumber, hash, network} = await resolveProperties({
                 blockNumber: this.getBlockNumber(),
                 hash: this._perform({
                     method: "broadcastTransaction",
@@ -453,7 +460,7 @@ export function JsonRpcApiProvider<TBase extends Constructor<ethers.JsonRpcApiPr
         async getPriorityOpResponse(
             l1TxResponse: ethers.TransactionResponse,
         ): Promise<PriorityOpResponse> {
-            const l2Response = { ...l1TxResponse } as PriorityOpResponse;
+            const l2Response = {...l1TxResponse} as PriorityOpResponse;
 
             l2Response.waitL1Commit = l2Response.wait;
             l2Response.wait = async () => {
@@ -503,7 +510,7 @@ export function JsonRpcApiProvider<TBase extends Constructor<ethers.JsonRpcApiPr
                 gasPerPubdata: transaction.gasPerPubdataByte,
             };
             if (transaction.factoryDeps) {
-                Object.assign(customData, { factoryDeps: transaction.factoryDeps });
+                Object.assign(customData, {factoryDeps: transaction.factoryDeps});
             }
 
             return await this.estimateGasL1({
@@ -630,18 +637,18 @@ export class BrowserProvider extends JsonRpcApiProvider(ethers.BrowserProvider) 
         this._contractAddresses = {};
 
         this.#request = async (method: string, params: Array<any> | Record<string, any>) => {
-            const payload = { method, params };
-            this.emit("debug", { action: "sendEip1193Request", payload });
+            const payload = {method, params};
+            this.emit("debug", {action: "sendEip1193Request", payload});
             try {
                 const result = await ethereum.request(payload);
-                this.emit("debug", { action: "receiveEip1193Result", result });
+                this.emit("debug", {action: "receiveEip1193Result", result});
                 return result;
             } catch (e: any) {
                 const error = new Error(e.message);
                 (<any>error).code = e.code;
                 (<any>error).data = e.data;
                 (<any>error).payload = payload;
-                this.emit("debug", { action: "receiveEip1193Error", error });
+                this.emit("debug", {action: "receiveEip1193Error", error});
                 throw error;
             }
         };
@@ -659,12 +666,12 @@ export class BrowserProvider extends JsonRpcApiProvider(ethers.BrowserProvider) 
 
         try {
             const result = await this.#request(payload.method, payload.params || []);
-            return [{ id: payload.id, result }];
+            return [{id: payload.id, result}];
         } catch (e: any) {
             return [
                 {
                     id: payload.id,
-                    error: { code: e.code, data: e.data, message: e.message },
+                    error: {code: e.code, data: e.data, message: e.message},
                 },
             ];
         }
@@ -710,7 +717,7 @@ export class BrowserProvider extends JsonRpcApiProvider(ethers.BrowserProvider) 
                 await this.#request("eth_requestAccounts", []);
             } catch (error: any) {
                 const payload = error.payload;
-                throw this.getRpcError(payload, { id: payload.id, error });
+                throw this.getRpcError(payload, {id: payload.id, error});
             }
         }
 
