@@ -476,7 +476,7 @@ export interface BatchDetailsWithOffchainVerification {
 
     // offchain verification fields
     l1_batch_number: number,
-    verifier_status: string,
+    verifier_status?: string,
     verifier_picked_at?: Date,
     verifier_submit_at?: Date,
 }
