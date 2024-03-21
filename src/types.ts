@@ -475,10 +475,10 @@ export interface BatchDetailsWithOffchainVerification {
     l2FairGasPrice: number;
 
     // offchain verification fields
-    l1_batch_number: number,
-    verifier_status?: string,
-    verifier_picked_at?: Date,
-    verifier_submit_at?: Date,
+    l1BatchNumber: number,
+    verifierStatus?: string,
+    verifierPickedAt?: Date,
+    verifierSubmitAt?: Date,
 }
 
 export interface BlockDetails {

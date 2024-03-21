@@ -235,8 +235,9 @@ describe("Provider", () => {
 
     describe("#getL1BatchDetailsWithOffchainVerification()", () => {
         it("should return L1 batch details with offchain verification", async () => {
-            const l1BatchNumber = await provider.getL1BatchDetailsWithOffchainVerification();
-            const result = await provider.getL1(l1BatchNumber);
+            const l1BatchNumber = await provider.getL1BatchNumber();
+            const result = await provider.getL1BatchDetailsWithOffchainVerification(l1BatchNumber);
+            console.log(result);
             expect(result).not.to.be.null;
         });
     });
