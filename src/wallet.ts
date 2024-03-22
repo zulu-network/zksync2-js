@@ -1,20 +1,19 @@
-import { EIP712Signer } from "./signer";
-import { Provider } from "./provider";
-import { EIP712_TX_TYPE, serializeEip712 } from "./utils";
-import { ethers, ProgressCallback } from "ethers";
-import { TransactionLike, TransactionRequest, TransactionResponse } from "./types";
-import { AdapterL1, AdapterL2 } from "./adapters";
+import { EIP712Signer } from './signer';
+import { Provider } from './provider';
+import { serialize, EIP712_TX_TYPE } from './utils';
+import { ethers, utils } from 'ethers';
+import { BlockTag, TransactionResponse, TransactionRequest } from './types';
+import { ProgressCallback } from '@ethersproject/json-wallets';
+import { AdapterL1, AdapterL2 } from './adapters';
 
 export class Wallet extends AdapterL2(AdapterL1(ethers.Wallet)) {
-    // @ts-ignore
     override readonly provider: Provider;
-    providerL1?: ethers.Provider;
-    // @ts-ignore
+    providerL1?: ethers.providers.Provider;
     public eip712: EIP712Signer;
 
     override _providerL1() {
         if (this.providerL1 == null) {
-            throw new Error("L1 provider missing: use `connectToL1` to specify");
+            throw new Error('L1 provider missing: use `connectToL1` to specify');
         }
         return this.providerL1;
     }
@@ -31,72 +30,77 @@ export class Wallet extends AdapterL2(AdapterL1(ethers.Wallet)) {
         return this;
     }
 
-    ethWallet(): ethers.Wallet {
-        return new ethers.Wallet(this.signingKey, this._providerL1());
+    ethWallet() {
+        return new ethers.Wallet(this._signingKey(), this._providerL1());
     }
 
-    override connect(provider: Provider): Wallet {
-        return new Wallet(this.signingKey, provider, this.providerL1);
+    // an alias with a better name
+    async getNonce(blockTag?: BlockTag) {
+        return await this.getTransactionCount(blockTag);
     }
 
-    connectToL1(provider: ethers.Provider): Wallet {
-        return new Wallet(this.signingKey, this.provider, provider);
+    override connect(provider: Provider) {
+        return new Wallet(this._signingKey(), provider, this.providerL1);
     }
 
-    static fromMnemonic(mnemonic: string, provider?: ethers.Provider): Wallet {
-        const wallet = super.fromPhrase(mnemonic, provider);
-        return new Wallet(wallet.signingKey, undefined, wallet.provider as ethers.Provider);
+    connectToL1(provider: ethers.providers.Provider) {
+        return new Wallet(this._signingKey(), this.provider, provider);
+    }
+
+    static override fromMnemonic(mnemonic: string, path?: string, wordlist?: ethers.Wordlist) {
+        const wallet = super.fromMnemonic(mnemonic, path, wordlist);
+        return new Wallet(wallet._signingKey());
     }
 
     static override async fromEncryptedJson(
         json: string,
-        password: string | Uint8Array,
-        callback?: ProgressCallback,
-    ): Promise<Wallet> {
+        password?: string | ethers.Bytes,
+        callback?: ProgressCallback
+    ) {
         const wallet = await super.fromEncryptedJson(json, password, callback);
-        return new Wallet(wallet.signingKey);
+        return new Wallet(wallet._signingKey());
     }
 
-    static override fromEncryptedJsonSync(json: string, password: string | Uint8Array): Wallet {
+    static override fromEncryptedJsonSync(json: string, password?: string | ethers.Bytes) {
         const wallet = super.fromEncryptedJsonSync(json, password);
-        return new Wallet(wallet.signingKey);
+        return new Wallet(wallet._signingKey());
+    }
+
+    static override createRandom(options?: any) {
+        const wallet = super.createRandom(options);
+        return new Wallet(wallet._signingKey());
     }
 
     constructor(
-        privateKey: string | ethers.SigningKey,
+        privateKey: ethers.BytesLike | utils.SigningKey,
         providerL2?: Provider,
-        providerL1?: ethers.Provider,
+        providerL1?: ethers.providers.Provider
     ) {
         super(privateKey, providerL2);
-        // @ts-ignore
         if (this.provider != null) {
-            const network = this.provider.getNetwork();
+            const chainId = this.getChainId();
             // @ts-ignore
-            this.eip712 = new EIP712Signer(
-                this,
-                network.then((n) => Number(n.chainId)),
-            );
+            this.eip712 = new EIP712Signer(this, chainId);
         }
         this.providerL1 = providerL1;
     }
 
-    override async populateTransaction(transaction: TransactionRequest): Promise<TransactionLike> {
+    override async populateTransaction(transaction: TransactionRequest): Promise<TransactionRequest> {
         if (transaction.type == null && transaction.customData == null) {
             // use legacy txs by default
             transaction.type = 0;
         }
+        transaction = await super.populateTransaction(transaction);
         if (transaction.customData == null && transaction.type != EIP712_TX_TYPE) {
-            return (await super.populateTransaction(transaction)) as TransactionLike;
+            return transaction;
         }
-        transaction.type = EIP712_TX_TYPE;
-        const populated = (await super.populateTransaction(transaction)) as TransactionLike;
 
-        populated.type = EIP712_TX_TYPE;
-        populated.value ??= 0;
-        populated.data ??= "0x";
-        populated.customData = this._fillCustomData(transaction.customData ?? {});
-        populated.gasPrice = await this.provider.getGasPrice();
-        return populated;
+        transaction.type = EIP712_TX_TYPE;
+        transaction.value ??= 0;
+        transaction.data ??= '0x';
+        transaction.customData = this._fillCustomData(transaction.customData);
+        transaction.gasPrice = await this.provider.getGasPrice();
+        return transaction;
     }
 
     override async signTransaction(transaction: TransactionRequest): Promise<string> {
@@ -107,20 +111,18 @@ export class Wallet extends AdapterL2(AdapterL1(ethers.Wallet)) {
             return await super.signTransaction(transaction);
         } else {
             transaction.from ??= this.address;
-            let from = await ethers.resolveAddress(transaction.from);
-            if (from.toLowerCase() != this.address.toLowerCase()) {
-                throw new Error("Transaction `from` address mismatch");
+            if (transaction.from.toLowerCase() != this.address.toLowerCase()) {
+                throw new Error('Transaction `from` address mismatch');
             }
-            transaction.customData ??= {};
             transaction.customData.customSignature = await this.eip712.sign(transaction);
-            const populated = await this.populateTransaction(transaction);
 
-            return serializeEip712(populated);
+            return serialize(transaction);
         }
     }
 
-    override async sendTransaction(tx: TransactionRequest): Promise<TransactionResponse> {
-        const populatedTx = await this.populateTransaction(tx);
-        return await this.provider.broadcastTransaction(await this.signTransaction(populatedTx));
+    override async sendTransaction(transaction: ethers.providers.TransactionRequest): Promise<TransactionResponse> {
+        // Typescript isn't smart enough to recognise that wallet.sendTransaction
+        // calls provider.sendTransaction which returns our extended type and not ethers' one.
+        return (await super.sendTransaction(transaction)) as TransactionResponse;
     }
 }

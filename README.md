@@ -1,5 +1,11 @@
 # 🚀 zksync2-js JavaScript SDK 🚀
 
+## repo
+
+https://registry.npmjs.org/zksync-web3/-/zksync-web3-0.15.4.tgz
+
+## Intro
+
 In order to provide easy access to all the features of zkSync Era, the `zksync2-js` JavaScript SDK was created,
 which is made in a way that has an interface very similar to those of [ethers](https://docs.ethers.io/v6/). In
 fact, `ethers` is a peer dependency of our library and most of the objects exported by `zksync2-js` (
@@ -16,18 +22,22 @@ box.
 
 ## 📌 Overview
 
-To begin, it is useful to have a basic understanding of the types of objects available and what they are responsible for, at a high level:
+To begin, it is useful to have a basic understanding of the types of objects available and what they are responsible
+for, at a high level:
 
--   `Provider` provides connection to the zkSync Era blockchain, which allows querying the blockchain state, such as account, block or transaction details,
-    querying event logs or evaluating read-only code using call. Additionally, the client facilitates writing to the blockchain by sending
-    transactions.
--   `Wallet` wraps all operations that interact with an account. An account generally has a private key, which can be used to sign a variety of
-    types of payloads. It provides easy usage of the most common features.
+- `Provider` provides connection to the zkSync Era blockchain, which allows querying the blockchain state, such as
+  account, block or transaction details,
+  querying event logs or evaluating read-only code using call. Additionally, the client facilitates writing to the
+  blockchain by sending
+  transactions.
+- `Wallet` wraps all operations that interact with an account. An account generally has a private key, which can be used
+  to sign a variety of
+  types of payloads. It provides easy usage of the most common features.
 
 ## 🛠 Prerequisites
 
--   `node: >= 18` ([installation guide](https://nodejs.org/en/download/package-manager))
--   `ethers: ^6.7.1`
+- `node: >= 18` ([installation guide](https://nodejs.org/en/download/package-manager))
+- `ethers: ^6.7.1`
 
 ## 📥 Installation & Setup
 
@@ -38,13 +48,14 @@ yarn add ethers@6 # ethers is a peer dependency of zksync2-js
 
 ## 📝 Examples
 
-The complete examples with various use cases are available [here](https://github.com/zksync-sdk/zksync2-examples/tree/main/js).
+The complete examples with various use cases are
+available [here](https://github.com/zksync-sdk/zksync2-examples/tree/main/js).
 
 ### Connect to the zkSync Era network:
 
 ```ts
-import { Provider, utils, types } from "zksync2-js";
-import { ethers } from "ethers";
+import {Provider, utils, types} from "zksync2-js";
+import {ethers} from "ethers";
 
 const provider = Provider.getDefaultProvider(types.Network.Goerli); // zkSync Era testnet (L2)
 const ethProvider = ethers.getDefaultProvider("goerli"); // goerli testnet (L1)
