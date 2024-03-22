@@ -20,6 +20,7 @@ import {
     Log,
     TransactionDetails,
     BatchDetails,
+    BatchDetailsWithOffchainVerification,
     BlockDetails,
     ContractAccountInfo
 } from './types';
@@ -584,6 +585,10 @@ export class Provider extends ethers.providers.JsonRpcProvider {
 
     async getL1BatchDetails(number: number): Promise<BatchDetails> {
         return await this.send('zks_getL1BatchDetails', [number]);
+    }
+
+    async getL1BatchDetailsWithOffchainVerification(number: number): Promise<BatchDetailsWithOffchainVerification> {
+        return await this.send("zks_getL1BatchDetailsWithOffchainVerification", [number]);
     }
 
     async getBlockDetails(number: number): Promise<BlockDetails> {

@@ -193,6 +193,29 @@ export interface BatchDetails {
     l2FairGasPrice: number;
 }
 
+export interface BatchDetailsWithOffchainVerification {
+    number: number;
+    timestamp: number;
+    l1TxCount: number;
+    l2TxCount: number;
+    rootHash?: string;
+    status: string;
+    commitTxHash?: string;
+    committedAt?: Date;
+    proveTxHash?: string;
+    provenAt?: Date;
+    executeTxHash?: string;
+    executedAt?: Date;
+    l1GasPrice: number;
+    l2FairGasPrice: number;
+
+    // offchain verification fields
+    l1BatchNumber: number,
+    verifierStatus?: string,
+    verifierPickedAt?: Date,
+    verifierSubmitAt?: Date,
+}
+
 export interface BlockDetails {
     number: number;
     timestamp: number;
