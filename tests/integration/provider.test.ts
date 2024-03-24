@@ -13,8 +13,7 @@ describe("Provider", () => {
 
     let tx = null;
 
-    // command:
-    //      mocha -r ts-node/register --bail  tests/integration/provider.test.ts
+    // command: mocha -r ts-node/register --bail tests/integration/provider.test.ts
     describe("#getL1BatchDetails()", () => {
         it("should return L1 batch details", async () => {
             const l1BatchNumber = await provider.getL1BatchNumber();
